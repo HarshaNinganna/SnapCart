@@ -22,16 +22,27 @@ if (!isset($_SESSION['vendor_id'])) {
     exit;
 }
 
-// Retrieve vendor information
+// Retrieve vendor ID from session
 $vendor_id = $_SESSION['vendor_id'];
 
-// Handle fetching orders for the vendor
-$sql = "SELECT o.id, p.name AS product_name, o.quantity, o.total_price, o.order_date
-        FROM orders o
-        JOIN products p ON o.product_id = p.id
-        WHERE p.vendor_id = '$vendor_id'";
-$result = $conn->query($sql);
-
+// Fetch orders related to products of this vendor
+$order_query = "
+    SELECT o.id AS order_id, o.total_price, o.order_date, 
+           u.first_name, u.last_name, u.email, 
+           GROUP_CONCAT(p.name SEPARATOR ', ') AS product_names
+    FROM orders o
+    JOIN order_items oi ON o.id = oi.order_id
+    JOIN products p ON oi.product_id = p.id
+    JOIN users u ON o.user_id = u.id
+    WHERE p.vendor_id = ?
+    GROUP BY o.id
+    ORDER BY o.order_date DESC
+";
+$stmt = $conn->prepare($order_query);
+$stmt->bind_param("i", $vendor_id);
+$stmt->execute();
+$order_result = $stmt->get_result();
+$stmt->close();
 ?>
 
 <!DOCTYPE html>
@@ -39,7 +50,7 @@ $result = $conn->query($sql);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View Orders</title>
+    <title>View Orders - Vendor Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="snap_index_style.css">
 </head>
@@ -53,8 +64,8 @@ $result = $conn->query($sql);
             <ul>
                 <li><a href="vendor.php">Dashboard</a></li>
                 <li><a href="#myproducts">My Products</a></li>
-                <li><a href="vendor_view_orders.php">View Orders</a></li>
-                <li><a href="#" data-bs-toggle="modal" data-bs-target="#addProductModal">Add Product</a></li>
+                <li><a href="vendor_add_product.php">Add Product</a></li>
+                <li><a href="view_orders.php">View Orders</a></li>
                 <li><a href="vendor_logout.php">Logout</a></li>
             </ul>
         </nav>
@@ -62,35 +73,35 @@ $result = $conn->query($sql);
 
     <!-- Main Content -->
     <main class="container mt-4">
-        <h1>View Orders</h1>
-        
-        <!-- Order List -->
+        <h1>Your Orders</h1>
         <table class="table table-striped">
             <thead>
                 <tr>
                     <th>Order ID</th>
-                    <th>Product Name</th>
-                    <th>Quantity</th>
+                    <th>Customer Name</th>
+                    <th>Email</th>
+                    <th>Product Names</th>
                     <th>Total Price</th>
                     <th>Order Date</th>
                 </tr>
             </thead>
             <tbody>
-                <?php
-                if ($result->num_rows > 0) {
-                    while ($order = $result->fetch_assoc()) {
-                        echo "<tr>";
-                        echo "<td>" . htmlspecialchars($order['id']) . "</td>";
-                        echo "<td>" . htmlspecialchars($order['product_name']) . "</td>";
-                        echo "<td>" . htmlspecialchars($order['quantity']) . "</td>";
-                        echo "<td>₹" . htmlspecialchars($order['total_price']) . "</td>";
-                        echo "<td>" . htmlspecialchars($order['order_date']) . "</td>";
-                        echo "</tr>";
-                    }
-                } else {
-                    echo "<tr><td colspan='5'>No orders found.</td></tr>";
-                }
-                ?>
+                <?php if ($order_result->num_rows > 0): ?>
+                    <?php while ($order = $order_result->fetch_assoc()): ?>
+                        <tr>
+                            <td><?php echo htmlspecialchars($order['order_id']); ?></td>
+                            <td><?php echo htmlspecialchars($order['first_name'] . ' ' . $order['last_name']); ?></td>
+                            <td><?php echo htmlspecialchars($order['email']); ?></td>
+                            <td><?php echo htmlspecialchars($order['product_names']); ?></td>
+                            <td>₹<?php echo number_format($order['total_price'], 2); ?></td>
+                            <td><?php echo htmlspecialchars($order['order_date']); ?></td>
+                        </tr>
+                    <?php endwhile; ?>
+                <?php else: ?>
+                    <tr>
+                        <td colspan="6">No orders available.</td>
+                    </tr>
+                <?php endif; ?>
             </tbody>
         </table>
     </main>
