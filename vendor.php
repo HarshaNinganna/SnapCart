@@ -49,8 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         $image_path = $image_dir . basename($_FILES['image']['name']);
         if (move_uploaded_file($_FILES['image']['tmp_name'], $image_path)) {
-            // Insert product into database
-            $sql = "INSERT INTO products (vendor_id, name, description, price, image) VALUES ('$vendor_id', '$name', '$description', '$price', '$image_path')";
+            // Insert product into database with the vendor's category
+            $sql = "INSERT INTO products (vendor_id, name, description, price, image, category) 
+                    VALUES ('$vendor_id', '$name', '$description', '$price', '$image_path', '$vendor_category')";
             if ($conn->query($sql) === TRUE) {
                 echo "<div class='alert alert-success' role='alert'>New product added successfully.</div>";
             } else {
@@ -84,7 +85,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <ul>
                 <li><a href="vendor.php">Dashboard</a></li>
                 <li><a href="#myproducts">My Products</a></li>
-                
                 <li><a href="#" data-bs-toggle="modal" data-bs-target="#addProductModal">Add Product</a></li>
                 <li><a href="view_orders.php">View Orders</a></li>
                 <li><a href="vendor_logout.php">Logout</a></li>
@@ -107,6 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <th>Description</th>
                     <th>Price</th>
                     <th>Image</th>
+                    <th>Category</th> <!-- Add Category Column -->
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -124,6 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         echo "<td>" . htmlspecialchars($product['description']) . "</td>";
                         echo "<td>₹" . htmlspecialchars($product['price']) . "</td>";
                         echo "<td><img src='" . htmlspecialchars($product['image']) . "' alt='Product Image' style='max-width: 100px;'></td>";
+                        echo "<td>" . htmlspecialchars($product['category']) . "</td>"; // Display category
                         echo "<td>";
                         echo "<a href='vendor_edit_product.php?id=" . $product['id'] . "' class='btn btn-warning btn-sm'>Update</a> ";
                         echo "<a href='vendor_delete_product.php?id=" . $product['id'] . "' class='btn btn-danger btn-sm'>Delete</a>";
@@ -131,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         echo "</tr>";
                     }
                 } else {
-                    echo "<tr><td colspan='6'>No products available.</td></tr>";
+                    echo "<tr><td colspan='7'>No products available.</td></tr>"; // Adjust colspan for added category column
                 }
                 ?>
             </tbody>
