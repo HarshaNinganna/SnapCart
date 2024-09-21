@@ -99,11 +99,6 @@ $conn->close();
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title>SnapCart - Home</title>
-    <!-- Bootstrap CSS -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-
-<!-- Bootstrap Bundle with Popper.js -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="snap_index_style.css">
@@ -125,6 +120,10 @@ $conn->close();
                         <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Profile</a>
                         <ul class="dropdown-menu" aria-labelledby="profileDropdown">
                             <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">View Profile</a></li>
+                            <li><a class="dropdown-item" href="track_order.php">Track My Orders</a></li>
+                            <li><a class="dropdown-item" href="manage_account.php">Manage Accounts</a></li>
+                            <li><a class="dropdown-item" href="offer.php">Gift Cards and offers</a></li>
+                            <li><a class="dropdown-item" href="payment.php">Payments</a></li>
                             <li><a class="dropdown-item" href="user_logout.php">Logout</a></li>
                         </ul>
                     </li>
@@ -253,8 +252,9 @@ $conn->close();
 
 
 <main class="container mt-4">
-    <h1>Welcome to SnapCart<?php if (isset($_SESSION['user_id']) && !empty($user)): ?>, <?php echo htmlspecialchars($user['first_name']); ?>!<?php endif; ?></h1>
+    <h1>Welcome to SnapCart<?php if (isset($user) && !empty($user)): ?>, <?php echo htmlspecialchars($user['first_name']); ?>!<?php endif; ?></h1>
 </main>
+
 
 
 
