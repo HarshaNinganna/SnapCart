@@ -90,7 +90,7 @@ $stmt->close();
                     <?php while ($order = $order_result->fetch_assoc()): ?>
                         <tr>
                             <td><?php echo htmlspecialchars($order['order_id']); ?></td>
-                            <td><?php echo htmlspecialchars($order['first_name'] . ' ' . $order['last_name']); ?></td>
+                            <td><?php echo htmlspecialchars($order['first_name'] ); ?></td>
                             <td><?php echo htmlspecialchars($order['email']); ?></td>
                             <td><?php echo htmlspecialchars($order['product_names']); ?></td>
                             <td>₹<?php echo number_format($order['total_price'], 2); ?></td>
