@@ -25,20 +25,25 @@ if (!isset($_SESSION['vendor_id'])) {
 // Retrieve vendor ID from session
 $vendor_id = $_SESSION['vendor_id'];
 
-// Fetch orders related to products of this vendor
+// Fetch orders related to products of this vendor, including payment method and payment status
 $order_query = "
-    SELECT o.id AS order_id, o.total_price, o.order_date, 
+    SELECT o.order_id AS order_id, o.total_price, o.order_date, o.payment_method, 
            u.first_name, u.last_name, u.email, 
            GROUP_CONCAT(p.name SEPARATOR ', ') AS product_names
     FROM orders o
-    JOIN order_items oi ON o.id = oi.order_id
+    JOIN order_items oi ON o.order_id = oi.order_id
     JOIN products p ON oi.product_id = p.id
     JOIN users u ON o.user_id = u.id
     WHERE p.vendor_id = ?
-    GROUP BY o.id
+    GROUP BY o.order_id
     ORDER BY o.order_date DESC
 ";
+
+// Prepare and execute query
 $stmt = $conn->prepare($order_query);
+if (!$stmt) {
+    die("Query preparation failed: " . $conn->error);
+}
 $stmt->bind_param("i", $vendor_id);
 $stmt->execute();
 $order_result = $stmt->get_result();
@@ -63,7 +68,6 @@ $stmt->close();
         <nav>
             <ul>
                 <li><a href="vendor.php">Dashboard</a></li>
-                <li><a href="#myproducts">My Products</a></li>
                 <li><a href="vendor_add_product.php">Add Product</a></li>
                 <li><a href="view_orders.php">View Orders</a></li>
                 <li><a href="vendor_logout.php">Logout</a></li>
@@ -83,6 +87,7 @@ $stmt->close();
                     <th>Product Names</th>
                     <th>Total Price</th>
                     <th>Order Date</th>
+                    <th>Payment Method</th>
                 </tr>
             </thead>
             <tbody>
@@ -90,16 +95,17 @@ $stmt->close();
                     <?php while ($order = $order_result->fetch_assoc()): ?>
                         <tr>
                             <td><?php echo htmlspecialchars($order['order_id']); ?></td>
-                            <td><?php echo htmlspecialchars($order['first_name'] ); ?></td>
+                            <td><?php echo htmlspecialchars($order['first_name']) . ' ' . htmlspecialchars($order['last_name']); ?></td>
                             <td><?php echo htmlspecialchars($order['email']); ?></td>
                             <td><?php echo htmlspecialchars($order['product_names']); ?></td>
                             <td>₹<?php echo number_format($order['total_price'], 2); ?></td>
                             <td><?php echo htmlspecialchars($order['order_date']); ?></td>
+                            <td><?php echo htmlspecialchars($order['payment_method']); ?></td>
                         </tr>
                     <?php endwhile; ?>
                 <?php else: ?>
                     <tr>
-                        <td colspan="6">No orders available.</td>
+                        <td colspan="7">No orders available.</td>
                     </tr>
                 <?php endif; ?>
             </tbody>
