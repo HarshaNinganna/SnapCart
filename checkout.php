@@ -58,10 +58,12 @@ $stmt->close();
 
 // Handle order submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
+    $payment_method = $_POST['payment_method'] ?? 'COD'; // Default to COD
+
     // Insert the order into the database
-    $order_query = "INSERT INTO orders (user_id, total_price, order_date) VALUES (?, ?, NOW())";
+    $order_query = "INSERT INTO orders (user_id, total_price, order_date, payment_method) VALUES (?, ?, NOW(), ?)";
     $stmt = $conn->prepare($order_query);
-    $stmt->bind_param("id", $user_id, $total_price);
+    $stmt->bind_param("ids", $user_id, $total_price, $payment_method);
     
     if (!$stmt->execute()) {
         die("Error inserting order: " . $stmt->error);
@@ -89,6 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout'])) {
     $stmt->execute();
     $stmt->close();
 
+    // Set a session variable to indicate order placement
+    $_SESSION['order_success'] = true;
+    
     // Redirect to a confirmation page
     header("Location: order_confirmation.php?order_id=$order_id");
     exit();
@@ -161,21 +166,98 @@ $conn->close();
                         <input class="form-check-input" type="radio" name="payment_method" id="cod" value="COD" checked>
                         <label class="form-check-label" for="cod">Cash on Delivery</label>
                     </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="payment_method" id="upi" value="UPI">
+                        <label class="form-check-label" for="upi">UPI ID</label>
+                        <input type="text" name="upi_id" class="form-control" placeholder="Enter UPI ID" required>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="payment_method" id="credit_card" value="Credit Card">
+                        <label class="form-check-label" for="credit_card">Credit Card</label>
+                        <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#creditCardModal">Add Credit Card</button>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="payment_method" id="debit_card" value="Debit Card">
+                        <label class="form-check-label" for="debit_card">Debit Card</label>
+                        <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#debitCardModal">Add Debit Card</button>
+                    </div>
 
-                    <!-- Submit Button -->
-                    <button type="submit" name="checkout" class="btn btn-primary mt-3">Place Order</button>
-                </form>
-            </div>
+                    <!-- Credit Card Modal -->
+                    <div class="modal fade" id="creditCardModal" tabindex="-1" aria-labelledby="creditCardModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="creditCardModalLabel">Enter Credit Card Details</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form>
+                                        <div class="mb-3">
+                                            <label for="cc-number" class="form-label">Card Number</label>
+                                            <input type="text" class="form-control" id="cc-number" placeholder="Card Number" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="cc-expiry" class="form-label">Expiry Date</label>
+                                            <input type="text" class="form-control" id="cc-expiry" placeholder="MM/YY" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="cc-cvc" class="form-label">CVC</label>
+                                            <input type="text" class="form-control" id="cc-cvc" placeholder="CVC" required>
+                                        </div>
+                                    </form>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button> 
+                                    <button type="button" class="btn btn-primary">Save Card</button> 
+                                </div> 
+                            </div> 
+                        </div> 
+                    </div>
+                                    <!-- Debit Card Modal -->
+                <div class="modal fade" id="debitCardModal" tabindex="-1" aria-labelledby="debitCardModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="debitCardModalLabel">Enter Debit Card Details</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form>
+                                    <div class="mb-3">
+                                        <label for="dc-number" class="form-label">Card Number</label>
+                                        <input type="text" class="form-control" id="dc-number" placeholder="Card Number" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="dc-expiry" class="form-label">Expiry Date</label>
+                                        <input type="text" class="form-control" id="dc-expiry" placeholder="MM/YY" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="dc-cvc" class="form-label">CVC</label>
+                                        <input type="text" class="form-control" id="dc-cvc" placeholder="CVC" required>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary">Save Card</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" name="checkout" class="btn btn-primary mt-3">Place Order</button>
+            </form>
         </div>
-    </main>
+    </div>
+</main>
 
-    <!-- Footer -->
-    <footer>
-        <div class="container">
-            <p>&copy; 2024 SnapCart. All rights reserved.</p>
-        </div>
-    </footer>
+<!-- Footer -->
+<footer>
+    <div class="container">
+        <p>&copy; 2024 SnapCart. All rights reserved.</p>
+    </div>
+</footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+
