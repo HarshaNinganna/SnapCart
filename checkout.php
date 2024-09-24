@@ -166,11 +166,7 @@ $conn->close();
                         <input class="form-check-input" type="radio" name="payment_method" id="cod" value="COD" checked>
                         <label class="form-check-label" for="cod">Cash on Delivery</label>
                     </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="payment_method" id="upi" value="UPI">
-                        <label class="form-check-label" for="upi">UPI ID</label>
-                        <input type="text" name="upi_id" class="form-control" placeholder="Enter UPI ID" required>
-                    </div>
+                    
                     <div class="form-check">
                         <input class="form-check-input" type="radio" name="payment_method" id="credit_card" value="Credit Card">
                         <label class="form-check-label" for="credit_card">Credit Card</label>
