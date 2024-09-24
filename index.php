@@ -80,7 +80,7 @@ if (isset($_POST['register'])) { // Assuming a form submission for registration
         $_SESSION['first_name'] = $first_name; // Store the user's first name
         
         // Redirect to home page or wherever appropriate
-        header("Location: home.php");
+        header("Location: index.php");
         exit();
     } else {
         // Log registration error if preparation fails
@@ -100,81 +100,195 @@ $conn->close();
 
     <title>SnapCart - Home</title>
 
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap 5 JavaScript Bundle (with Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- jQuery (needed for Bootstrap 4, but not for Bootstrap 5) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!-- Google Fonts for Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
     <link rel="stylesheet" href="snap_index_style.css">
 </head>
 <body>
     <!-- Header -->
     <header>
-        <div class="logo">
-            <img src="assets/logo1.png" alt="SnapCart Logo">
-        </div>
-        <nav>
-            <ul>
-                <li><a href="#">Home</a></li>
-                <li><a href="#electronics">Products</a></li>
-                <li><a href="#" data-bs-toggle="modal" data-bs-target="#wishlistModal">Wishlist</a></li>
-                <li><a href="#" data-bs-toggle="modal" data-bs-target="#cartModal">Cart</a></li>
-                <?php if (isset($_SESSION['user_id'])): ?>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Profile</a>
-                        <ul class="dropdown-menu" aria-labelledby="profileDropdown">
-                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">View Profile</a></li>
-                            <li><a class="dropdown-item" href="track_order.php">Track My Orders</a></li>
-                            <li><a class="dropdown-item" href="manage_account.php">Manage Accounts</a></li>
-                            <li><a class="dropdown-item" href="offer.php">Gift Cards and offers</a></li>
-                            <li><a class="dropdown-item" href="payment.php">Payments</a></li>
-                            <li><a class="dropdown-item" href="user_logout.php">Logout</a></li>
-                        </ul>
-                    </li>
-                <?php else: ?>
-                    <li><a href="user_login.php">Login</a></li>
-                <?php endif; ?>
-            </ul>
-        </nav>
-    </header>
+    <div class="logo">
+        <img src="assets/logo1.png" alt="SnapCart Logo">
+    </div>
+    <nav>
+        <ul>
+            <li><a href="#">Home</a></li>
+            <li><a href="#electronics">Products</a></li>
+            <li><a href="#" data-bs-toggle="modal" data-bs-target="#wishlistModal">Wishlist</a></li>
+            <li><a href="#" data-bs-toggle="modal" data-bs-target="#cartModal">Cart</a></li>
+            <?php if (isset($_SESSION['user_id'])): ?>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Profile</a>
+                    <ul class="dropdown-menu" aria-labelledby="profileDropdown">
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#profileModal">View Profile</a></li>
+                        <li><a class="dropdown-item" href="track_order.php">Track My Orders</a></li>
+                        <li><a class="dropdown-item" href="manage_orders.php">Manage Orders</a></li>
+                        <li><a class="dropdown-item" href="offer.php">Gift Cards and Offers</a></li>
+                        <li><a class="dropdown-item" href="payment.php">Payments</a></li>
+                        <li><a class="dropdown-item" href="user_logout.php">Logout</a></li>
+                    </ul>
+                </li>
+            <?php else: ?>
+                <li><a href="user_login.php">Login</a></li>
+            <?php endif; ?>
+        </ul>
+    </nav>
+</header>
+
+    <!-- JavaScript for enabling submenu functionality -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const dropdowns = document.querySelectorAll('.dropdown-submenu a.dropdown-toggle');
+
+            dropdowns.forEach(function(dropdown) {
+                dropdown.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const submenu = this.nextElementSibling;
+                    submenu.classList.toggle('show');
+                });
+            });
+
+            // Close the submenu when clicking outside
+            document.addEventListener('click', function (e) {
+                if (!e.target.matches('.dropdown-submenu a.dropdown-toggle')) {
+                    dropdowns.forEach(function(dropdown) {
+                        const submenu = dropdown.nextElementSibling;
+                        if (submenu) {
+                            submenu.classList.remove('show');
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+
+
 
     <!-- Cart Modal -->
-    <div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="cartModalLabel">Your Cart</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cartModalLabel">Your Cart</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="cartItems">
+                    <p>Loading cart items...</p>
                 </div>
-                <div class="modal-body">
-                    <div id="cartItems">
-                        <p>Loading cart items...</p>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <a href="cart.php" class="btn btn-primary">Checkout</a>
-                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="cart.php" class="btn btn-primary">Checkout</a>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Wishlist Modal -->
-    <div class="modal fade" id="wishlistModal" tabindex="-1" aria-labelledby="wishlistModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="wishlistModalLabel">Your Wishlist</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<script>
+    // Load cart items
+    fetch('fetch_cart_items.php')
+        .then(response => response.json())
+        .then(data => {
+            const cartItemsDiv = document.getElementById('cartItems');
+            cartItemsDiv.innerHTML = ''; // Clear loading message
+            if (data.length > 0) {
+                data.forEach(item => {
+                    cartItemsDiv.innerHTML += `
+                        <div class="cart-item">
+                            <h5>${item.name}</h5>
+                            <p class="price">₹${item.price}</p>
+                            <p>Quantity: ${item.quantity}</p>
+                            <img src="${item.image}" alt="${item.name}" style="max-width:100px;">
+                            <form method="post" action="remove_from_cart.php" class="d-inline">
+                                <input type="hidden" name="product_id" value="${item.product_id}">
+                                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                            </form>
+                        </div>
+                        <hr>
+                    `;
+                });
+            } else {
+                cartItemsDiv.innerHTML = '<p>Your cart is empty.</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching cart items:', error);
+            document.getElementById('cartItems').innerHTML = '<p>Error loading cart items.</p>';
+        });
+</script>
+
+<!-- Wishlist Modal -->
+<div class="modal fade" id="wishlistModal" tabindex="-1" aria-labelledby="wishlistModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="wishlistModalLabel">Your Wishlist</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="wishlistItems">
+                    <p>Loading wishlist items...</p>
                 </div>
-                <div class="modal-body">
-                    <div id="wishlistItems">
-                        <p>Loading wishlist items...</p>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <a href="cart.php" class="btn btn-primary">Add to Cart</a>
-                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
+</div>
+<script>
+    // Load wishlist items when the modal is shown
+    $('#wishlistModal').on('show.bs.modal', function () {
+        fetch('fetch_wishlist_items.php')
+            .then(response => response.json())
+            .then(data => {
+                const wishlistItemsDiv = document.getElementById('wishlistItems');
+                wishlistItemsDiv.innerHTML = ''; // Clear loading message
+                
+                if (data.length > 0) {
+                    data.forEach(item => {
+                        wishlistItemsDiv.innerHTML += `
+                            <div class="wishlist-item">
+                                <h5>${item.name}</h5>
+                                <p class="price">₹${item.price}</p>
+                                <img src="${item.image}" alt="${item.name}" style="max-width:100px;">
+                                <form method="post" action="add_to_cart.php" class="d-inline">
+                                    <input type="hidden" name="product_id" value="${item.product_id}">
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button type="submit" class="btn btn-primary">Add to Cart</button>
+                                </form>
+                                <form method="post" action="delete_from_wishlist.php" class="d-inline">
+                                    <input type="hidden" name="wishlist_id" value="${item.wishlist_id}">
+                                    <button type="submit" class="btn btn-danger">Delete</button>
+                                </form>
+                            </div>
+                            <hr>
+                        `;
+                    });
+                } else {
+                    wishlistItemsDiv.innerHTML = '<p>Your wishlist is empty.</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching wishlist items:', error);
+                document.getElementById('wishlistItems').innerHTML = '<p>Error loading wishlist items.</p>';
+            });
+    });
+</script>
 
    <!-- Profile Modal -->
 <!-- Profile Modal -->
@@ -390,6 +504,7 @@ $conn->close();
             .then(response => response.text())
             .then(data => document.getElementById('wishlistItems').innerHTML = data);
     </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
 
