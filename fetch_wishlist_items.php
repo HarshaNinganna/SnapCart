@@ -21,11 +21,11 @@ if (isset($_SESSION['user_id'])) {
     $user_id = $_SESSION['user_id'];
 
     // Prepare the SQL query to fetch wishlist items
-    $sql = "SELECT p.id, p.name, p.image, p.price 
+    $sql = "SELECT w.id AS wishlist_id, p.id AS product_id, p.name, p.image, p.price 
             FROM wishlist w 
             JOIN products p ON w.product_id = p.id 
             WHERE w.user_id = ?";
-    
+
     if ($stmt = $conn->prepare($sql)) {
         $stmt->bind_param("i", $user_id);
         $stmt->execute();
@@ -38,7 +38,22 @@ if (isset($_SESSION['user_id'])) {
                 echo '<img src="' . htmlspecialchars($row['image']) . '" alt="' . htmlspecialchars($row['name']) . '" style="max-width:100px;">';
                 echo '<h3>' . htmlspecialchars($row['name']) . '</h3>';
                 echo '<p class="price">₹' . htmlspecialchars($row['price']) . '</p>';
+
+                // Form to add to cart
+                echo '<form method="post" action="add_to_cart.php" class="d-inline">';
+                echo '<input type="hidden" name="product_id" value="' . htmlspecialchars($row['product_id']) . '">';
+                echo '<input type="hidden" name="quantity" value="1">';
+                echo '<button type="submit" class="btn btn-primary">Add to Cart</button>';
+                echo '</form>';
+
+                // Form to delete from wishlist
+                echo '<form method="post" action="delete_from_wishlist.php" class="d-inline">';
+                echo '<input type="hidden" name="wishlist_id" value="' . htmlspecialchars($row['wishlist_id']) . '">';
+                echo '<button type="submit" class="btn btn-danger">Delete</button>';
+                echo '</form>';
+
                 echo '</div>'; // Closing wishlist-item div
+                echo '<hr>'; // Optional, for visual separation
             }
         } else {
             echo '<p>Your wishlist is empty.</p>';
