@@ -32,22 +32,50 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $city = mysqli_real_escape_string($conn, $_POST['city']);
     $state = mysqli_real_escape_string($conn, $_POST['state']);
     $area_code = mysqli_real_escape_string($conn, $_POST['area_code']);
-    
+
     // Hash password before storing
     if ($password !== $confirm_password) {
         $error = "Passwords do not match.";
     } else {
         $hashed_password = password_hash($password, PASSWORD_BCRYPT);
-        $insert_query = "INSERT INTO users (first_name, last_name, email, password, mobile_number, gender, dob, address1, address2, city, state, area_code) 
-                         VALUES ('$first_name', '$last_name', '$email', '$hashed_password', '$mobile_number', '$gender', '$dob', '$address1', '$address2', '$city', '$state', '$area_code')";
         
-        if (mysqli_query($conn, $insert_query)) {
-            $_SESSION['user_id'] = mysqli_insert_id($conn); // Save user ID in session
-            $success = "Registration successful!";
-            header("Location: home.php"); // Redirect to home page
-            exit();
-        } else {
-            $error = "Error: " . mysqli_error($conn);
+        // Generate username
+        $year = date('Y', strtotime($dob));
+        $username = strtolower($first_name . '+' . $year);
+
+        $profile_image = null;
+
+        // Handle file upload
+        if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
+            $target_dir = "uploads/";
+            $target_file = $target_dir . basename($_FILES["profile_image"]["name"]);
+            $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+            $allowed_types = ['jpg', 'jpeg', 'png', 'gif'];
+
+            // Check file type
+            if (in_array($imageFileType, $allowed_types)) {
+                if (move_uploaded_file($_FILES["profile_image"]["tmp_name"], $target_file)) {
+                    $profile_image = $target_file;
+                } else {
+                    $error = "Sorry, there was an error uploading your file.";
+                }
+            } else {
+                $error = "Only JPG, JPEG, PNG & GIF files are allowed.";
+            }
+        }
+
+        if (empty($error)) {
+            $insert_query = "INSERT INTO users (first_name, last_name, email, password, mobile_number, gender, dob, address1, address2, city, state, area_code, profile_image, username) 
+                             VALUES ('$first_name', '$last_name', '$email', '$hashed_password', '$mobile_number', '$gender', '$dob', '$address1', '$address2', '$city', '$state', '$area_code', '$profile_image', '$username')";
+            
+            if (mysqli_query($conn, $insert_query)) {
+                $_SESSION['user_id'] = mysqli_insert_id($conn); // Save user ID in session
+                $success = "Registration successful!";
+                echo "<script>alert('Registration Successful! Your username is: $username. Please login.'); window.location.href='user_login.php';</script>";
+                exit();
+            } else {
+                $error = "Error: " . mysqli_error($conn);
+            }
         }
     }
 }
@@ -55,14 +83,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 $conn->close();
 ?>
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Registration</title>
+    <link href="register_style.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+
 </head>
 <body>
 <div class="container">
@@ -127,10 +156,6 @@ $conn->close();
         <div class="mb-3">
             <label for="state" class="form-label">State</label>
             <input type="text" class="form-control" id="state" name="state" required>
-        </div>
-        <div class="mb-3">
-            <label for="country" class="form-label">Country</label>
-            <input type="text" class="form-control" id="country" name="country" required>
         </div>
         <div class="mb-3">
             <label for="area_code" class="form-label">Area Code</label>
