@@ -28,10 +28,12 @@ $user_id = $_SESSION['user_id'];
 
 // Validate product_id
 if ($product_id <= 0) {
-    die("Invalid product ID.");
+    $_SESSION['message'] = "Invalid product ID.";
+    header("Location: index.php"); // Redirect to home page if product ID is invalid
+    exit();
 }
 
-// Check if the product is already in the wishlist
+// Prepare and execute the query to check if the product is already in the wishlist
 $sql = "SELECT * FROM wishlist WHERE user_id = ? AND product_id = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param('ii', $user_id, $product_id);
@@ -39,19 +41,24 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows > 0) {
-    // Product is already in the wishlist, no need to add again
+    // Product is already in the wishlist
     $_SESSION['message'] = "Product is already in your wishlist.";
 } else {
     // Product is not in the wishlist, add it
     $sql = "INSERT INTO wishlist (user_id, product_id) VALUES (?, ?)";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param('ii', $user_id, $product_id);
-    $stmt->execute();
-    $_SESSION['message'] = "Product added to wishlist.";
+    if ($stmt->execute()) {
+        $_SESSION['message'] = "Product added to wishlist.";
+    } else {
+        $_SESSION['message'] = "Error adding product to wishlist: " . $stmt->error;
+    }
 }
 
 $stmt->close();
 $conn->close();
 
-header("Location: index.php"); // Redirect to home page after adding to wishlist
+// Redirect to home page after adding to wishlist
+header("Location: index.php");
 exit();
+?>
