@@ -45,7 +45,7 @@ if (isset($_SESSION['user_id'])) {
     }
 }
 
-// Fetch all products categorized by their category
+// Fetch all products
 $sql = "SELECT * FROM products";
 $result = $conn->query($sql);
 
@@ -54,7 +54,7 @@ if (!$result) {
     die("Error in query: " . $conn->error);
 }
 
-// Example user registration logic (ensure this part is in the right place)
+// Example user registration logic
 if (isset($_POST['register'])) { // Assuming a form submission for registration
     $first_name = $_POST['first_name'];
     $last_name = $_POST['last_name'];
@@ -68,13 +68,22 @@ if (isset($_POST['register'])) { // Assuming a form submission for registration
     if ($stmt) {
         // Hash the password for security
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-        
         $stmt->bind_param("ssss", $first_name, $last_name, $email, $hashed_password);
         $stmt->execute();
         
         // Get the newly created user ID
         $user_id = $stmt->insert_id;
-        
+
+        // Add a welcome notification
+        $notification_query = "INSERT INTO notifications (user_id, message) VALUES (?, ?)";
+        $notification_stmt = $conn->prepare($notification_query);
+        if ($notification_stmt) {
+            $welcome_message = "Welcome to SnapCart, $first_name!";
+            $notification_stmt->bind_param("is", $user_id, $welcome_message);
+            $notification_stmt->execute();
+            $notification_stmt->close();
+        }
+
         // Store user details in session
         $_SESSION['user_id'] = $user_id; // Set this to the new user's ID
         $_SESSION['first_name'] = $first_name; // Store the user's first name
@@ -91,6 +100,7 @@ if (isset($_POST['register'])) { // Assuming a form submission for registration
 // Close the database connection
 $conn->close();
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -147,7 +157,6 @@ $conn->close();
         </ul>
     </nav>
 </header>
-
     <!-- JavaScript for enabling submenu functionality -->
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -174,9 +183,6 @@ $conn->close();
             });
         });
     </script>
-
-
-
     <!-- Cart Modal -->
 <div class="modal fade" id="cartModal" tabindex="-1" aria-labelledby="cartModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -197,7 +203,6 @@ $conn->close();
         </div>
     </div>
 </div>
-
 <script>
     // Load cart items
     fetch('fetch_cart_items.php')
@@ -230,7 +235,6 @@ $conn->close();
             document.getElementById('cartItems').innerHTML = '<p>Error loading cart items.</p>';
         });
 </script>
-
 <!-- Wishlist Modal -->
 <div class="modal fade" id="wishlistModal" tabindex="-1" aria-labelledby="wishlistModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -250,35 +254,18 @@ $conn->close();
         </div>
     </div>
 </div>
+
 <script>
     // Load wishlist items when the modal is shown
     $('#wishlistModal').on('show.bs.modal', function () {
         fetch('fetch_wishlist_items.php')
-            .then(response => response.json())
+            .then(response => response.text()) // Fetch as text since the PHP outputs HTML directly
             .then(data => {
                 const wishlistItemsDiv = document.getElementById('wishlistItems');
                 wishlistItemsDiv.innerHTML = ''; // Clear loading message
                 
-                if (data.length > 0) {
-                    data.forEach(item => {
-                        wishlistItemsDiv.innerHTML += `
-                            <div class="wishlist-item">
-                                <h5>${item.name}</h5>
-                                <p class="price">₹${item.price}</p>
-                                <img src="${item.image}" alt="${item.name}" style="max-width:100px;">
-                                <form method="post" action="add_to_cart.php" class="d-inline">
-                                    <input type="hidden" name="product_id" value="${item.product_id}">
-                                    <input type="hidden" name="quantity" value="1">
-                                    <button type="submit" class="btn btn-primary">Add to Cart</button>
-                                </form>
-                                <form method="post" action="delete_from_wishlist.php" class="d-inline">
-                                    <input type="hidden" name="wishlist_id" value="${item.wishlist_id}">
-                                    <button type="submit" class="btn btn-danger">Delete</button>
-                                </form>
-                            </div>
-                            <hr>
-                        `;
-                    });
+                if (data.trim()) { // If there's content
+                    wishlistItemsDiv.innerHTML = data;
                 } else {
                     wishlistItemsDiv.innerHTML = '<p>Your wishlist is empty.</p>';
                 }
@@ -363,15 +350,9 @@ $conn->close();
         </div>
     </div>
 </div>
-
-
 <main class="container mt-4">
     <h1>Welcome to SnapCart<?php if (isset($user) && !empty($user)): ?>, <?php echo htmlspecialchars($user['first_name']); ?>!<?php endif; ?></h1>
 </main>
-
-
-
-
         <!-- Categories Filter -->
         <div class="categories">
             <h3>Category</h3>
@@ -384,80 +365,97 @@ $conn->close();
                 <li><a href="#toys">Toys</a></li>
             </ul>
         </div>
-
         <!-- Product Sections by Category -->
-        <div class="product-grid">
-            <?php
-            // Initialize categories array
-            $categories = [
-                'Electronics' => [],
-                'Clothing' => [],
-                'Home Appliances' => [],
-                'Books' => [],
-                'Sports' => [],
-                'Toys' => []
-            ];
-
-            // Fetch and categorize products
-            while ($product = $result->fetch_assoc()) {
-                $category = isset($product['category']) ? $product['category'] : 'Uncategorized';
-                if (!array_key_exists($category, $categories)) {
-                    $categories[$category] = [];
-                }
-                $categories[$category][] = $product;
+<div class="product-grid">
+    <?php
+    // Initialize categories array
+    $categories = [
+        'Electronics' => [],
+        'Clothing' => [],
+        'Home Appliances' => [],
+        'Books' => [],
+        'Sports' => [],
+        'Toys' => []
+    ];
+    // Fetch and categorize products
+    while ($product = $result->fetch_assoc()) {
+        $category = isset($product['category']) ? $product['category'] : 'Uncategorized';
+        if (!array_key_exists($category, $categories)) {
+            $categories[$category] = [];
+        }
+        $categories[$category][] = $product;
+    }
+    // Display products by category
+    foreach ($categories as $category => $products) {
+        $category_id = strtolower(str_replace(' ', '_', $category));
+        echo "<section id='$category_id'>";
+        echo "<h2 class='category-title'>" . htmlspecialchars($category) . "</h2>";
+        if (count($products) > 0) {
+            echo '<div class="category-products">';
+            foreach ($products as $product) {
+                echo '<div class="product-card">';
+                echo '<div class="product-image">';
+                echo '<img src="' . htmlspecialchars($product['image']) . '" alt="' . htmlspecialchars($product['name']) . '">';
+                echo '</div>';
+                echo '<h3 class="product-name">' . htmlspecialchars($product['name']) . '</h3>';
+                echo '<p class="price">₹' . htmlspecialchars($product['price']) . '</p>';
+                echo '<div class="button-group">';
+                echo '<form method="post" action="add_to_cart.php" class="d-inline">';
+                echo '<input type="hidden" name="product_id" value="' . htmlspecialchars($product['id']) . '">';
+                echo '<input type="hidden" name="quantity" value="1">';
+                echo '<button type="submit" class="btn btn-primary">Add to Cart</button>';
+                echo '</form>';
+                echo '<form method="post" action="add_to_wishlist.php" class="d-inline">';
+                echo '<input type="hidden" name="product_id" value="' . htmlspecialchars($product['id']) . '">';
+                echo '<button type="submit" class="btn btn-secondary">Add to Wishlist</button>';
+                echo '</form>';
+                echo '</div>'; // Closing button-group div
+                echo '<button type="button" class="btn btn-info mt-2" data-bs-toggle="modal" data-bs-target="#productDescriptionModal" data-product-id="' . htmlspecialchars($product['id']) . '">Description</button>';
+                echo '</div>'; // Closing product-card div
             }
+            echo '</div>'; // Closing category-products div
+        } else {
+            echo "<p>No products available in this category.</p>";
+        }
+        echo "</section>"; // Closing category section
+    }
+    ?>
+</div>
+<div class="notifications">
+    <h3>Notifications</h3>
+    <ul>
+        <?php if (!empty($notifications)): ?>
+            <?php foreach ($notifications as $notification): ?>
+                <li>
+                    <?php echo htmlspecialchars($notification['message']); ?>
+                    <small><?php echo $notification['created_at']; ?></small>
+                </li>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <li>No new notifications</li>
+        <?php endif; ?>
+    </ul>
+</div>
 
-            // Display products by category
-            foreach ($categories as $category => $products) {
-                $category_id = strtolower(str_replace(' ', '_', $category));
-                echo "<section id='$category_id'>";
-                echo "<h2>" . htmlspecialchars($category) . "</h2>";
-                if (count($products) > 0) {
-                    foreach ($products as $product) {
-                        echo '<div class="product-card">';
-                        echo '<img src="' . htmlspecialchars($product['image']) . '" alt="' . htmlspecialchars($product['name']) . '" style="max-width:100px;">';
-                        echo '<h3>' . htmlspecialchars($product['name']) . '</h3>';
-                        echo '<p class="price">₹' . htmlspecialchars($product['price']) . '</p>';
-                        echo '<form method="post" action="add_to_cart.php" class="d-inline">';
-                        echo '<input type="hidden" name="product_id" value="' . htmlspecialchars($product['id']) . '">';
-                        echo '<input type="hidden" name="quantity" value="1">';
-                        echo '<button type="submit" class="btn btn-primary">Add to Cart</button>';
-                        echo '</form>';
-                        echo '<form method="post" action="add_to_wishlist.php" class="d-inline">';
-                        echo '<input type="hidden" name="product_id" value="' . htmlspecialchars($product['id']) . '">';
-                        echo '<button type="submit" class="btn btn-secondary">Add to Wishlist</button>';
-                        echo '</form>';
-                        echo '<button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#productDescriptionModal" data-product-id="' . htmlspecialchars($product['id']) . '">Description</button>';
-                        echo '</div>'; // Closing product-card div
-                    }
-                } else {
-                    echo "<p>No products available in this category.</p>";
-                }
-                echo "</section>"; // Closing category section
-            }
-            ?>
-        </div>
-    </main>
-
-    <!-- Product Description Modal -->
-    <div class="modal fade" id="productDescriptionModal" tabindex="-1" aria-labelledby="productDescriptionModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="productDescriptionModalLabel">Product Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<!-- Product Description Modal -->
+<div class="modal fade" id="productDescriptionModal" tabindex="-1" aria-labelledby="productDescriptionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="productDescriptionModalLabel">Product Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="productDetails">
+                    <!-- Product details will be dynamically loaded here -->
                 </div>
-                <div class="modal-body">
-                    <div id="productDetails">
-                        <!-- Product details will be dynamically loaded here -->
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
+</div>
 
     <!-- Footer -->
     <footer>
@@ -486,14 +484,12 @@ $conn->close();
                     document.getElementById('productDetails').innerHTML = '<p>Error loading product details.</p>';
                 });
         }
-
         document.querySelectorAll('.btn-info').forEach(button => {
             button.addEventListener('click', function() {
                 const productId = this.getAttribute('data-product-id');
                 fetchProductDetails(productId);
             });
         });
-
         // Load cart items
         fetch('fetch_cart_items.php')
             .then(response => response.text())
